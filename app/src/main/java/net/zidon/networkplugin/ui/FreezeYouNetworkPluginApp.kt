@@ -13,6 +13,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import net.zidon.networkplugin.Screen
 import net.zidon.networkplugin.ui.account.AccountComponent
 import net.zidon.networkplugin.ui.theme.FreezeYouNetworkPluginTheme
+import net.zidon.networkplugin.ui.world.WorldComponent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +26,7 @@ fun FreezeYouNetworkPluginApp() {
                     val navBackStackEntry by appState.navController.currentBackStackEntryAsState()
                     val currentDestination = navBackStackEntry?.destination
                     listOf(
+                        Screen.World,
                         Screen.Home,
                         Screen.Account,
                     ).forEach { item ->
@@ -42,6 +44,7 @@ fun FreezeYouNetworkPluginApp() {
                 startDestination = Screen.Home.route,
                 modifier = Modifier.padding(it)
             ) {
+                composable(Screen.World.route) { WorldComponent() }
                 composable(Screen.Home.route) { Text(text = "123") }
                 composable(Screen.Account.route) { AccountComponent() }
             }
