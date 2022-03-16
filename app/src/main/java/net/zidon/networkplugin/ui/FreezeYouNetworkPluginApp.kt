@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import net.zidon.networkplugin.Screen
 import net.zidon.networkplugin.ui.account.AccountComponent
+import net.zidon.networkplugin.ui.home.HomeComponent
 import net.zidon.networkplugin.ui.theme.FreezeYouNetworkPluginTheme
 import net.zidon.networkplugin.ui.world.WorldComponent
 
@@ -45,7 +46,7 @@ fun FreezeYouNetworkPluginApp() {
                 modifier = Modifier.padding(it)
             ) {
                 composable(Screen.World.route) { WorldComponent() }
-                composable(Screen.Home.route) { Text(text = "123") }
+                composable(Screen.Home.route) { HomeComponent() }
                 composable(Screen.Account.route) { AccountComponent() }
             }
         }

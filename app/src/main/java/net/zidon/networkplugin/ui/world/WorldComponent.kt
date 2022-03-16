@@ -94,7 +94,7 @@ fun WorldComponent() {
                     .clickable { }) {
                 Column(
                     modifier = Modifier
-                        .padding(horizontal = 2.dp, vertical = 2.dp)
+                        .padding(horizontal = 8.dp, vertical = 8.dp)
                         .fillParentMaxWidth()
                 ) {
                     Text(text = "123$it", fontSize = 24.sp)
@@ -107,46 +107,6 @@ fun WorldComponent() {
         }
     }
 }
-//LazyColumn(modifier = Modifier.padding(horizontal = 8.dp)) {
-//        item {
-//            ElevatedCard(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(start = 8.dp, top = 16.dp, end = 8.dp, bottom = 8.dp)
-//            ) {
-//                Column(
-//                    modifier = Modifier
-//                        .padding(4.dp)
-//                        .height(160.dp)
-//                ) {
-//                }
-//            }
-//        }
-//        items(listData) { item ->
-//            Row(horizontalArrangement = Arrangement.SpaceEvenly) {
-//                for (i in 0..1) {
-//                    Card(
-//                        modifier = Modifier
-//                            .fillMaxWidth(if (i == 0) 0.5F else 1F)
-//                            .height(96.dp)
-//                            .padding(8.dp),
-//                    ) {
-//                        Box(
-//                            modifier = Modifier.fillParentMaxSize(),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Text(
-//                                text = item[i],
-//                            )
-//                        }
-//                    }
-//                }
-//            }
-//        }
-//        item {
-//            Spacer(Modifier.height(80.dp))
-//        }
-//    }
 
 @Preview(showBackground = true)
 @Composable

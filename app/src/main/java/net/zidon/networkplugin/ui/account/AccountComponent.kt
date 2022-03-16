@@ -53,7 +53,10 @@ fun AccountComponent() {
                             .padding(vertical = 1.dp)
                             .clickable { }) {
                         Row(
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .height(32.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Rounded.Settings, "")
                             Spacer(modifier = Modifier.size(16.dp))
@@ -67,7 +70,10 @@ fun AccountComponent() {
                             .clip(RoundedCornerShape(8.dp))
                             .clickable { }) {
                         Row(
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .height(32.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(Icons.Rounded.Settings, "")
                             Spacer(modifier = Modifier.size(16.dp))
