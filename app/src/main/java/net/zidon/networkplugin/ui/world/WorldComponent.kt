@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
@@ -87,18 +88,48 @@ fun WorldComponent() {
             Spacer(Modifier.height(4.dp))
         }
         items(listData) {
-            Box(
+            Row(
                 Modifier
                     .padding(horizontal = 8.dp, vertical = 1.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable { }) {
+                    .fillParentMaxWidth()
+                    .clickable { },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column(
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 8.dp)
-                        .fillParentMaxWidth()
+                    modifier = Modifier.padding(8.dp)
                 ) {
                     Text(text = "123$it", fontSize = 24.sp)
                     Text(text = "123")
+                }
+                var menuExpanded by remember { mutableStateOf(false) }
+                IconButton(
+                    modifier = Modifier.padding(2.dp),
+                    onClick = { menuExpanded = true }
+                ) {
+                    Icon(Icons.Rounded.MoreVert, "")
+                    Box {
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Favorite") },
+                                leadingIcon = { Icon(Icons.Rounded.FavoriteBorder, "") },
+                                onClick = {},
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Download") },
+                                leadingIcon = { Icon(Icons.Rounded.Download, "") },
+                                onClick = {},
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share") },
+                                leadingIcon = { Icon(Icons.Rounded.Share, "") },
+                                onClick = {},
+                            )
+                        }
+                    }
                 }
             }
         }
