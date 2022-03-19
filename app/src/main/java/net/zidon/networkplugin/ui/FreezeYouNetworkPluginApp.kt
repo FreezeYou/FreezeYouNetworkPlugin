@@ -10,6 +10,7 @@ import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import net.zidon.networkplugin.MainViewModel
 import net.zidon.networkplugin.Screen
 import net.zidon.networkplugin.ui.account.AccountComponent
 import net.zidon.networkplugin.ui.home.HomeComponent
@@ -18,7 +19,7 @@ import net.zidon.networkplugin.ui.world.WorldComponent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FreezeYouNetworkPluginApp() {
+fun FreezeYouNetworkPluginApp(activityViewModel: MainViewModel) {
     FreezeYouNetworkPluginTheme {
         val appState = rememberFreezeYouNetworkPluginAppState()
         Scaffold(
@@ -45,7 +46,7 @@ fun FreezeYouNetworkPluginApp() {
                 startDestination = Screen.Home.route,
                 modifier = Modifier.padding(it)
             ) {
-                composable(Screen.World.route) { WorldComponent() }
+                composable(Screen.World.route) { WorldComponent(activityViewModel) }
                 composable(Screen.Home.route) { HomeComponent() }
                 composable(Screen.Account.route) { AccountComponent() }
             }
