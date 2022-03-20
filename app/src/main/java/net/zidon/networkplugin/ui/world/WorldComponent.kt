@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
@@ -17,14 +18,22 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.zidon.networkplugin.MainViewModel
+import net.zidon.networkplugin.model.WorldSharedItem
+import net.zidon.networkplugin.model.WorldSharedItemTag
+import net.zidon.networkplugin.model.WorldSharedItemTagState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorldComponent(activityViewModel: MainViewModel) {
+    val scrollState = rememberLazyListState()
     val dataToDisplayOnScreen = activityViewModel.worldSharedDataToDisplayOnScreen
     val dataIsLoading = activityViewModel.worldSharedDataIsLoading
+    val dataNoMore = activityViewModel.worldSharedDataNoMore
 
-    LazyColumn(modifier = Modifier.padding(horizontal = 8.dp)) {
+    LazyColumn(
+        modifier = Modifier.padding(horizontal = 8.dp),
+        state = scrollState
+    ) {
         item {
             ElevatedCard(
                 modifier = Modifier
@@ -40,34 +49,57 @@ fun WorldComponent(activityViewModel: MainViewModel) {
             }
         }
         item {
-            SharedDataListToolBarComponent()
+            SharedDataListToolBarComponent(
+                activityViewModel.worldSharedDataTopTenCategories,
+                {
+                    if (activityViewModel.worldSharedDataTopTenCategories.isEmpty())
+                        activityViewModel.refreshWorldSharedDataTopTenTags()
+                },
+                {},
+                { activityViewModel.refreshWorldSharedDataTopTenTags() }
+            )
         }
         item {
             Spacer(Modifier.height(4.dp))
         }
         items(dataToDisplayOnScreen) {
-            SharedDataListItemComponent(it)
+            SharedDataListItemComponent(it, { it.favorite = !it.favorite }, {}, {})
         }
         item {
             SharedDataListLoadMoreItemComponent(
-                dataIsLoading
+                dataIsLoading, dataNoMore
             ) { if (!dataIsLoading) activityViewModel.getMoreWorldSharedData() }
         }
-        item {
+        item("footerPadding") {
             Spacer(Modifier.height(16.dp))
+        }
+    }
+
+    // Autoload more
+    scrollState.layoutInfo.visibleItemsInfo.lastOrNull()?.key?.let {
+        if ("footerPadding" == it) {
+            activityViewModel.getMoreWorldSharedData()
         }
     }
 }
 
 @Composable
-fun SharedDataListToolBarComponent() {
-    var moreMenuExpanded by remember { mutableStateOf(false) }
+fun SharedDataListToolBarComponent(
+    filterItems: List<WorldSharedItemTagState>,
+    onFilterButtonClick: () -> Unit,
+    onDropMenuItemClick: (WorldSharedItemTagState) -> Unit,
+    onRefreshFilterItemsClick: () -> Unit
+) {
+    var filterMenuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IconButton(
-            onClick = { moreMenuExpanded = true },
+            onClick = {
+                filterMenuExpanded = true
+                onFilterButtonClick()
+            },
             content = {
                 Icon(
                     Icons.Rounded.FilterList,
@@ -85,32 +117,62 @@ fun SharedDataListToolBarComponent() {
     }
     Box {
         DropdownMenu(
-            expanded = moreMenuExpanded,
-            onDismissRequest = { moreMenuExpanded = false }) {
+            expanded = filterMenuExpanded,
+            onDismissRequest = { filterMenuExpanded = false }) {
+            for (item in filterItems) {
+                SharedDataListToolBarFilterDropdownMenuItemComponent(item, onDropMenuItemClick)
+            }
             DropdownMenuItem(
-                text = { Text("A") },
-                onClick = {},
-                leadingIcon = { Icon(Icons.Rounded._9kPlus, "") },
-                trailingIcon = { Icon(Icons.Rounded.CheckBox, "") }
-            )
-            DropdownMenuItem(
-                text = { Text("B") },
-                onClick = {},
-                leadingIcon = { Icon(Icons.Rounded._1kPlus, "") },
-                trailingIcon = { Icon(Icons.Rounded.CheckBoxOutlineBlank, "") }
-            )
-            DropdownMenuItem(
-                text = { Text("C") },
-                onClick = {},
-                leadingIcon = { Icon(Icons.Rounded.TrendingUp, "") },
-                trailingIcon = { Icon(Icons.Rounded.CheckBoxOutlineBlank, "") }
+                text = { Text("Refresh") },
+                onClick = { onRefreshFilterItemsClick() },
+                leadingIcon = { Icon(Icons.Rounded.Refresh, "") },
+                trailingIcon = { Icon(Icons.Rounded.Sync, "") }
             )
         }
     }
 }
 
 @Composable
-fun SharedDataListItemComponent(data: Int) {
+fun SharedDataListToolBarFilterDropdownMenuItemComponent(
+    item: WorldSharedItemTagState,
+    onDropMenuItemClick: (WorldSharedItemTagState) -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text(item.tag.title) },
+        onClick = { onDropMenuItemClick(item) },
+        leadingIcon = {
+            Icon(
+                when (item.tag.count) {
+                    in 9001..Long.MAX_VALUE -> Icons.Rounded._9kPlus
+                    in 8001..9000 -> Icons.Rounded._8kPlus
+                    in 7001..8000 -> Icons.Rounded._7kPlus
+                    in 6001..7000 -> Icons.Rounded._6kPlus
+                    in 5001..6000 -> Icons.Rounded._5kPlus
+                    in 4001..5000 -> Icons.Rounded._4kPlus
+                    in 3001..4000 -> Icons.Rounded._3kPlus
+                    in 2001..3000 -> Icons.Rounded._2kPlus
+                    in 1001..2000 -> Icons.Rounded._1kPlus
+                    else -> Icons.Rounded.TrendingUp
+                },
+                "Trends"
+            )
+        },
+        trailingIcon = {
+            Icon(
+                if (item.checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                ""
+            )
+        }
+    )
+}
+
+@Composable
+fun SharedDataListItemComponent(
+    data: WorldSharedItem,
+    onFavoriteClick: () -> Unit,
+    onDownloadClick: () -> Unit,
+    onShareClick: () -> Unit
+) {
     Row(
         Modifier
             .padding(horizontal = 8.dp, vertical = 1.dp)
@@ -123,42 +185,58 @@ fun SharedDataListItemComponent(data: Int) {
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
-            Text(text = "Title$data", fontSize = 24.sp)
-            Text(text = "Subtitle")
+            Text(text = data.title, fontSize = 20.sp)
+            Text(text = data.subtitle, fontSize = 12.sp)
         }
-        var menuExpanded by remember { mutableStateOf(false) }
-        IconButton(
-            modifier = Modifier.padding(2.dp),
-            onClick = { menuExpanded = true }
-        ) {
-            Icon(Icons.Rounded.MoreVert, "")
-            Box {
-                DropdownMenu(
-                    expanded = menuExpanded,
-                    onDismissRequest = { menuExpanded = false }) {
-                    DropdownMenuItem(
-                        text = { Text("Favorite") },
-                        leadingIcon = { Icon(Icons.Rounded.FavoriteBorder, "") },
-                        onClick = {},
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Download") },
-                        leadingIcon = { Icon(Icons.Rounded.Download, "") },
-                        onClick = {},
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Share") },
-                        leadingIcon = { Icon(Icons.Rounded.Share, "") },
-                        onClick = {},
-                    )
-                }
+        SharedDataListItemMoreButtonComponent(data, onFavoriteClick, onDownloadClick, onShareClick)
+    }
+}
+
+@Composable
+fun SharedDataListItemMoreButtonComponent(
+    data: WorldSharedItem,
+    onFavoriteClick: () -> Unit,
+    onDownloadClick: () -> Unit,
+    onShareClick: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    IconButton(onClick = { menuExpanded = true }) {
+        Icon(Icons.Rounded.MoreVert, "")
+        Box {
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }) {
+                DropdownMenuItem(
+                    text = { Text("Favorite") },
+                    leadingIcon = {
+                        Icon(
+                            if (data.favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                            ""
+                        )
+                    },
+                    onClick = { onFavoriteClick() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Download") },
+                    leadingIcon = { Icon(Icons.Rounded.Download, "") },
+                    onClick = { onDownloadClick() },
+                )
+                DropdownMenuItem(
+                    text = { Text("Share") },
+                    leadingIcon = { Icon(Icons.Rounded.Share, "") },
+                    onClick = { onShareClick() },
+                )
             }
         }
     }
 }
 
 @Composable
-fun SharedDataListLoadMoreItemComponent(dataIsLoading: Boolean, onClick: () -> Unit) {
+fun SharedDataListLoadMoreItemComponent(
+    dataIsLoading: Boolean,
+    dataNoMore: Boolean,
+    onClick: () -> Unit
+) {
     Row(
         Modifier
             .padding(horizontal = 8.dp, vertical = 1.dp)
@@ -172,9 +250,9 @@ fun SharedDataListLoadMoreItemComponent(dataIsLoading: Boolean, onClick: () -> U
             modifier = Modifier.padding(8.dp)
         ) {
             Text(
-                text = if (dataIsLoading) "Loading" else "More",
+                text = if (dataIsLoading) "Loading" else if (dataNoMore) "No more" else "More",
                 color = Color.LightGray,
-                fontSize = 14.sp
+                fontSize = 10.sp
             )
         }
     }
@@ -183,17 +261,47 @@ fun SharedDataListLoadMoreItemComponent(dataIsLoading: Boolean, onClick: () -> U
 @Preview(showBackground = true)
 @Composable
 fun SharedDataListToolBarComponentPreview() {
-    SharedDataListToolBarComponent()
+    SharedDataListToolBarComponent(
+        listOf(
+            WorldSharedItemTagState(
+                WorldSharedItemTag(
+                    1L,
+                    "1",
+                    10L
+                ),
+                false
+            ),
+            WorldSharedItemTagState(
+                WorldSharedItemTag(
+                    2L,
+                    "2",
+                    100L
+                ),
+                true
+            )
+        ),
+        {}, {}, {}
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SharedDataListItemComponentPreview() {
-    SharedDataListItemComponent(0)
+    SharedDataListItemComponent(
+        WorldSharedItem(
+            1,
+            "Title",
+            "Subtitle",
+            listOf(WorldSharedItemTag(1, "Title", 1)),
+            true,
+            ""
+        ),
+        {}, {}, {}
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SharedDataListLoadMoreItemComponentPreview() {
-    SharedDataListLoadMoreItemComponent(false) {}
+    SharedDataListLoadMoreItemComponent(dataIsLoading = false, dataNoMore = false) {}
 }
