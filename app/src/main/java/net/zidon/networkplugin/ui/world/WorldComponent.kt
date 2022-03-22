@@ -50,12 +50,12 @@ fun WorldComponent(activityViewModel: MainViewModel) {
         }
         item {
             SharedDataListToolBarComponent(
-                activityViewModel.worldSharedDataTopTenCategories,
+                activityViewModel.worldSharedDataTopTenCategories.values,
                 {
                     if (activityViewModel.worldSharedDataTopTenCategories.isEmpty())
                         activityViewModel.refreshWorldSharedDataTopTenTags()
                 },
-                {},
+                { state -> activityViewModel.changeWorldSharedDataTopTenTagCheckState(state) },
                 { activityViewModel.refreshWorldSharedDataTopTenTags() }
             )
         }
@@ -63,7 +63,12 @@ fun WorldComponent(activityViewModel: MainViewModel) {
             Spacer(Modifier.height(4.dp))
         }
         items(dataToDisplayOnScreen) {
-            SharedDataListItemComponent(it, { it.favorite = !it.favorite }, {}, {})
+            SharedDataListItemComponent(
+                it,
+                { activityViewModel.changeWorldSharedItemFavoriteState(it) },
+                {},
+                {}
+            )
         }
         item {
             SharedDataListLoadMoreItemComponent(
@@ -85,7 +90,7 @@ fun WorldComponent(activityViewModel: MainViewModel) {
 
 @Composable
 fun SharedDataListToolBarComponent(
-    filterItems: List<WorldSharedItemTagState>,
+    filterItems: Collection<WorldSharedItemTagState>,
     onFilterButtonClick: () -> Unit,
     onDropMenuItemClick: (WorldSharedItemTagState) -> Unit,
     onRefreshFilterItemsClick: () -> Unit
@@ -119,7 +124,9 @@ fun SharedDataListToolBarComponent(
         DropdownMenu(
             expanded = filterMenuExpanded,
             onDismissRequest = { filterMenuExpanded = false }) {
-            for (item in filterItems) {
+            val items = ArrayList(filterItems)
+            items.sortWith { t1, t2 -> if (t1.tag.count > t2.tag.count) -1 else 1 }
+            for (item in items) {
                 SharedDataListToolBarFilterDropdownMenuItemComponent(item, onDropMenuItemClick)
             }
             DropdownMenuItem(
