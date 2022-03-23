@@ -5,7 +5,7 @@ data class WorldSharedItem(
     val worldId: Long,
     val title: String,
     val subtitle: String,
-    val tag: List<WorldSharedItemTag>,
+    val tagIds: List<Long>,
     var favorite: Boolean,
     val detailUrl: String,
 )

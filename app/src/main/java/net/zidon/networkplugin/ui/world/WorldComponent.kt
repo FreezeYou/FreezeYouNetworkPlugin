@@ -50,9 +50,9 @@ fun WorldComponent(activityViewModel: MainViewModel) {
         }
         item {
             SharedDataListToolBarComponent(
-                activityViewModel.worldSharedDataTopTenCategories.values,
+                activityViewModel.worldSharedDataTopTenTags.values,
                 {
-                    if (activityViewModel.worldSharedDataTopTenCategories.isEmpty())
+                    while (activityViewModel.worldSharedDataTopTenTags.isEmpty())
                         activityViewModel.refreshWorldSharedDataTopTenTags()
                 },
                 { state -> activityViewModel.changeWorldSharedDataTopTenTagCheckState(state) },
@@ -299,7 +299,7 @@ fun SharedDataListItemComponentPreview() {
             1,
             "Title",
             "Subtitle",
-            listOf(WorldSharedItemTag(1, "Title", 1)),
+            listOf(1),
             true,
             ""
         ),

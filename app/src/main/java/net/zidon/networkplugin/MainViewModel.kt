@@ -11,21 +11,24 @@ import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import net.zidon.networkplugin.model.*
 
 class MainViewModel : ViewModel() {
 
-    private val getMoreWorldSharedDataMutex = Mutex()
-    private val refreshWorldSharedDataTopTenTagsMutex = Mutex()
-    private val changeWorldSharedItemFavoriteStateMutex = Mutex()
+    private val worldSharedDataLoadedDataMutex = Mutex()
+    private val worldSharedDataLoadedData = ArrayList<WorldSharedItem>()
+    private val worldSharedDataTopTenTagsCheckedMutex = Mutex()
+    private val worldSharedDataTopTenTagsChecked = HashSet<Long>()
 
-    private var currentWorldSharedDataIndex: Long = -1
-
+    private val worldSharedDataToDisplayOnScreenMutex = Mutex()
     var worldSharedDataToDisplayOnScreen by mutableStateOf<List<WorldSharedItem>>(emptyList())
         private set
-    var worldSharedDataTopTenCategories by mutableStateOf<Map<Long, WorldSharedItemTagState>>(
+
+    private val worldSharedDataTopTenTagsMutex = Mutex()
+    var worldSharedDataTopTenTags by mutableStateOf<Map<Long, WorldSharedItemTagState>>(
         emptyMap()
     )
         private set
@@ -36,13 +39,13 @@ class MainViewModel : ViewModel() {
 
     fun getMoreWorldSharedData() {
         viewModelScope.launch(Dispatchers.IO) {
-            if (worldSharedDataNoMore || !getMoreWorldSharedDataMutex.tryLock())
+            if (worldSharedDataNoMore || !worldSharedDataToDisplayOnScreenMutex.tryLock()
+                || !worldSharedDataLoadedDataMutex.tryLock()
+            )
                 return@launch
 
             worldSharedDataIsLoading = true
             try {
-                val mutableList: MutableList<WorldSharedItem> = ArrayList()
-                mutableList.addAll(worldSharedDataToDisplayOnScreen)
                 // TODO: Test only
                 val itemsJson: WorldSharedItemsJson =
                     HttpClient {
@@ -53,26 +56,32 @@ class MainViewModel : ViewModel() {
                         }
                     }.post("https://test.freezeyou.net/worldSharedItems.json") {
                         contentType(ContentType.Application.Json)
-                        body = WorldSharedItemsGetMoreWithToken("Test", currentWorldSharedDataIndex)
+                        body = WorldSharedItemsGetMoreWithToken(
+                            "Test",
+                            getCurrentWorldSharedDataIndex()
+                        )
                     }
-                mutableList.addAll(itemsJson.data)
-                currentWorldSharedDataIndex = mutableList.lastOrNull()?.worldId ?: -1
-                if (currentWorldSharedDataIndex == 0L) {
+                worldSharedDataLoadedData.addAll(itemsJson.data)
+                filterWorldSharedDataToDisplayOnScreen()
+                if (getCurrentWorldSharedDataIndex() == 0L) {
                     worldSharedDataNoMore = true
                 }
-                worldSharedDataToDisplayOnScreen = mutableList
             } catch (_: Exception) {
                 // TODO: No network, service unavailable, etc.
+                delay(1000) // Avoid the flood when the server is down.
             }
             worldSharedDataIsLoading = false
 
-            getMoreWorldSharedDataMutex.unlock()
+            worldSharedDataToDisplayOnScreenMutex.unlock()
+            worldSharedDataLoadedDataMutex.unlock()
         }
     }
 
     fun refreshWorldSharedDataTopTenTags() {
         viewModelScope.launch(Dispatchers.IO) {
-            if (!refreshWorldSharedDataTopTenTagsMutex.tryLock())
+            if (!worldSharedDataTopTenTagsMutex.tryLock()
+                || !worldSharedDataTopTenTagsCheckedMutex.tryLock()
+            )
                 return@launch
 
             try {
@@ -86,34 +95,96 @@ class MainViewModel : ViewModel() {
                             })
                         }
                     }.post("https://test.freezeyou.net/topTenTags.json")
+
+                worldSharedDataTopTenTagsChecked.clear()
                 for (tag in tagsJson.data) {
                     categoriesMap[tag.tagId] = WorldSharedItemTagState(
                         tag,
-                        worldSharedDataTopTenCategories[tag.tagId]?.checked ?: false
+                        worldSharedDataTopTenTags[tag.tagId]?.checked ?: false
                     )
+                    if (categoriesMap[tag.tagId]?.checked == true) {
+                        addOrRemoveCheckedTag(tag.tagId, true)
+                    }
                 }
-                worldSharedDataTopTenCategories = categoriesMap
+                worldSharedDataTopTenTags = categoriesMap
             } catch (_: Exception) {
                 // TODO: No network, service unavailable, etc.
+                delay(1000) // Avoid the flood when the server is down.
             }
 
-            refreshWorldSharedDataTopTenTagsMutex.unlock()
+            worldSharedDataTopTenTagsMutex.unlock()
+            worldSharedDataTopTenTagsCheckedMutex.unlock()
         }
     }
 
     fun changeWorldSharedItemFavoriteState(worldSharedItem: WorldSharedItem) {
         viewModelScope.launch(Dispatchers.IO) {
-            if (!changeWorldSharedItemFavoriteStateMutex.tryLock())
+            if (!worldSharedDataLoadedDataMutex.tryLock())
                 return@launch
             worldSharedItem.favorite = !worldSharedItem.favorite
             // TODO: Sync remote data
-            changeWorldSharedItemFavoriteStateMutex.unlock()
+            worldSharedDataLoadedDataMutex.unlock()
         }
     }
 
     fun changeWorldSharedDataTopTenTagCheckState(tagState: WorldSharedItemTagState) {
-        tagState.checked = !tagState.checked
-        // TODO: Filter
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!worldSharedDataTopTenTagsMutex.tryLock()
+                || !worldSharedDataTopTenTagsCheckedMutex.tryLock()
+                || !worldSharedDataLoadedDataMutex.tryLock()
+                || !worldSharedDataToDisplayOnScreenMutex.tryLock()
+            )
+                return@launch
+
+            tagState.checked = !tagState.checked
+            addOrRemoveCheckedTag(tagState.tag.tagId, tagState.checked)
+
+            filterWorldSharedDataToDisplayOnScreen()
+
+            worldSharedDataTopTenTagsMutex.unlock()
+            worldSharedDataTopTenTagsCheckedMutex.unlock()
+            worldSharedDataLoadedDataMutex.unlock()
+            worldSharedDataToDisplayOnScreenMutex.unlock()
+        }
+    }
+
+    /**
+     * Should lock worldSharedDataLoadedDataMutex first.
+     */
+    private fun getCurrentWorldSharedDataIndex(): Long {
+        return worldSharedDataLoadedData.lastOrNull()?.worldId ?: -1
+    }
+
+    /**
+     * Should lock worldSharedDataTopTenTagsMutex first.
+     */
+    private fun addOrRemoveCheckedTag(tagId: Long, add: Boolean) {
+        if (add) {
+            worldSharedDataTopTenTagsChecked.add(tagId)
+        } else {
+            worldSharedDataTopTenTagsChecked.remove(tagId)
+        }
+    }
+
+    /**
+     * Should lock worldSharedDataLoadedDataMutex, worldSharedDataTopTenCategoriesCheckedMutex,
+     * worldSharedDataToDisplayOnScreenMutex first.
+     */
+    private fun filterWorldSharedDataToDisplayOnScreen() {
+        val mutableList: MutableList<WorldSharedItem> = ArrayList()
+        if (worldSharedDataTopTenTagsChecked.isEmpty()) {
+            mutableList.addAll(worldSharedDataLoadedData)
+        } else {
+            worldSharedDataLoadedData.forEach { datum ->
+                for (tagId in worldSharedDataTopTenTagsChecked) {
+                    if (datum.tagIds.contains(tagId)) {
+                        mutableList.add(datum)
+                        break
+                    }
+                }
+            }
+        }
+        worldSharedDataToDisplayOnScreen = mutableList
     }
 
 }
