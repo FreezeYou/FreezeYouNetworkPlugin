@@ -48,7 +48,7 @@ fun FreezeYouNetworkPluginApp(activityViewModel: MainViewModel) {
             ) {
                 composable(Screen.World.route) { WorldComponent(activityViewModel) }
                 composable(Screen.Home.route) { HomeComponent() }
-                composable(Screen.Account.route) { AccountComponent() }
+                composable(Screen.Account.route) { AccountComponent(activityViewModel) }
             }
         }
     }

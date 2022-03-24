@@ -18,6 +18,17 @@ import net.zidon.networkplugin.model.*
 
 class MainViewModel : ViewModel() {
 
+    var accountDataIsLoading by mutableStateOf(false)
+        private set
+    var accountLogged by mutableStateOf(false)
+        private set
+    var accountAvatarLoaded by mutableStateOf(false)
+        private set
+    var accountInfo by mutableStateOf(
+        AccountInfo(-1, "Loading", "", "")
+    )
+        private set
+
     private val worldSharedDataLoadedDataMutex = Mutex()
     private val worldSharedDataLoadedData = ArrayList<WorldSharedItem>()
     private val worldSharedDataTopTenTagsCheckedMutex = Mutex()
