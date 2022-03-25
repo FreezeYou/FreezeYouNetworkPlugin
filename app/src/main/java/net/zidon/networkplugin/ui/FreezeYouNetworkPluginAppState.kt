@@ -2,6 +2,7 @@ package net.zidon.networkplugin.ui
 
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
 import net.zidon.networkplugin.Screen
@@ -24,6 +25,14 @@ class FreezeYouNetworkPluginAppState(
     private val currentRoute: String
         get() = navController.currentDestination?.route ?: ""
 
+    val shouldShowBottomBar: Boolean
+        @Composable get() = navController
+            .currentBackStackEntryAsState().value?.destination?.route in listOf(
+            Screen.World.route,
+            Screen.Home.route,
+            Screen.Account.route
+        )
+
     fun navigateToBottomBarRoute(route: String) {
         if (route != currentRoute) {
             navController.navigate(route) {
@@ -36,4 +45,11 @@ class FreezeYouNetworkPluginAppState(
         }
     }
 
+    fun navigateToRoute(route: String) {
+        navController.navigate(route)
+    }
+
+    fun navigateUp() {
+        navController.navigateUp()
+    }
 }

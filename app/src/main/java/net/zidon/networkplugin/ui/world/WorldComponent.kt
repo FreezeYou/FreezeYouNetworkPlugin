@@ -16,7 +16,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import net.zidon.networkplugin.MainViewModel
 import net.zidon.networkplugin.model.WorldSharedItem
 import net.zidon.networkplugin.model.WorldSharedItemTag
@@ -51,12 +50,14 @@ fun WorldComponent(activityViewModel: MainViewModel) {
         item {
             SharedDataListToolBarComponent(
                 activityViewModel.worldSharedDataTopTenTags.values,
+                activityViewModel.worldSharedDataTopTenTagsIsLoading,
                 {
                     while (activityViewModel.worldSharedDataTopTenTags.isEmpty())
                         activityViewModel.refreshWorldSharedDataTopTenTags()
                 },
                 { state -> activityViewModel.changeWorldSharedDataTopTenTagCheckState(state) },
-                { activityViewModel.refreshWorldSharedDataTopTenTags() }
+                { activityViewModel.refreshWorldSharedDataTopTenTags() },
+                {}
             )
         }
         item {
@@ -91,11 +92,14 @@ fun WorldComponent(activityViewModel: MainViewModel) {
 @Composable
 fun SharedDataListToolBarComponent(
     filterItems: Collection<WorldSharedItemTagState>,
+    topTenTagsIsLoading: Boolean,
     onFilterButtonClick: () -> Unit,
     onDropMenuItemClick: (WorldSharedItemTagState) -> Unit,
-    onRefreshFilterItemsClick: () -> Unit
+    onRefreshFilterItemsClick: () -> Unit,
+    onSearchButtonClick: () -> Unit
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
@@ -110,15 +114,17 @@ fun SharedDataListToolBarComponent(
                     Icons.Rounded.FilterList,
                     contentDescription = "1"
                 )
-            })
+            }
+        )
         IconButton(
-            onClick = { },
+            onClick = { onSearchButtonClick() },
             content = {
                 Icon(
                     Icons.Rounded.Search,
                     contentDescription = "1"
                 )
-            })
+            }
+        )
     }
     Box {
         DropdownMenu(
@@ -133,7 +139,18 @@ fun SharedDataListToolBarComponent(
                 text = { Text("Refresh") },
                 onClick = { onRefreshFilterItemsClick() },
                 leadingIcon = { Icon(Icons.Rounded.Refresh, "") },
-                trailingIcon = { Icon(Icons.Rounded.Sync, "") }
+                trailingIcon = {
+                    if (topTenTagsIsLoading) {
+                        CircularProgressIndicator(
+                            Modifier
+                                .padding(2.dp)
+                                .size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Rounded.Sync, "")
+                    }
+                }
             )
         }
     }
@@ -192,8 +209,8 @@ fun SharedDataListItemComponent(
         Column(
             modifier = Modifier.padding(8.dp)
         ) {
-            Text(text = data.title, fontSize = 20.sp)
-            Text(text = data.subtitle, fontSize = 12.sp)
+            Text(text = data.title, style = MaterialTheme.typography.titleLarge)
+            Text(text = data.subtitle, style = MaterialTheme.typography.labelMedium)
         }
         SharedDataListItemMoreButtonComponent(data, onFavoriteClick, onDownloadClick, onShareClick)
     }
@@ -259,7 +276,7 @@ fun SharedDataListLoadMoreItemComponent(
             Text(
                 text = if (dataIsLoading) "Loading" else if (dataNoMore) "No more" else "More",
                 color = Color.LightGray,
-                fontSize = 10.sp
+                style = MaterialTheme.typography.labelSmall
             )
         }
     }
@@ -287,7 +304,8 @@ fun SharedDataListToolBarComponentPreview() {
                 true
             )
         ),
-        {}, {}, {}
+        true,
+        {}, {}, {}, {}
     )
 }
 

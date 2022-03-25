@@ -12,3 +12,7 @@ sealed class Screen(val route: String, @StringRes val resourceId: Int, val icon:
     object Home : Screen("home", R.string.home, Icons.Rounded.Home)
     object Account : Screen("account", R.string.account, Icons.Rounded.Person)
 }
+
+sealed class Account(val route: String) {
+    object Login : Account("${Screen.Account.route}/login")
+}

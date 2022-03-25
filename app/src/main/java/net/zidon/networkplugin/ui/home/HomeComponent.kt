@@ -8,10 +8,7 @@ import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Share
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +62,7 @@ fun HomeComponent() {
                             Spacer(Modifier.width(24.dp))
                             Icon(it[i].icon, "")
                             Spacer(Modifier.width(14.dp))
-                            Text(it[i].name)
+                            Text(it[i].name, style = MaterialTheme.typography.titleMedium)
                             Spacer(Modifier.width(24.dp))
                         }
                     }

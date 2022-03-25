@@ -22,10 +22,8 @@ class MainViewModel : ViewModel() {
         private set
     var accountLogged by mutableStateOf(false)
         private set
-    var accountAvatarLoaded by mutableStateOf(false)
-        private set
     var accountInfo by mutableStateOf(
-        AccountInfo(-1, "Loading", "", "")
+        AccountInfo(-1, "", "", "")
     )
         private set
 
@@ -38,6 +36,8 @@ class MainViewModel : ViewModel() {
     var worldSharedDataToDisplayOnScreen by mutableStateOf<List<WorldSharedItem>>(emptyList())
         private set
 
+    var worldSharedDataTopTenTagsIsLoading by mutableStateOf(false)
+        private set
     private val worldSharedDataTopTenTagsMutex = Mutex()
     var worldSharedDataTopTenTags by mutableStateOf<Map<Long, WorldSharedItemTagState>>(
         emptyMap()
@@ -95,6 +95,7 @@ class MainViewModel : ViewModel() {
             )
                 return@launch
 
+            worldSharedDataTopTenTagsIsLoading = true
             try {
                 val categoriesMap: HashMap<Long, WorldSharedItemTagState> = HashMap()
                 // TODO: Test only
@@ -122,6 +123,7 @@ class MainViewModel : ViewModel() {
                 // TODO: No network, service unavailable, etc.
                 delay(1000) // Avoid the flood when the server is down.
             }
+            worldSharedDataTopTenTagsIsLoading = false
 
             worldSharedDataTopTenTagsMutex.unlock()
             worldSharedDataTopTenTagsCheckedMutex.unlock()
